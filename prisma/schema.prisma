@@ -1,0 +1,39 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/infra/database/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum QueueStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+  DEAD_LETTER
+}
+
+model Message {
+  id             String   @id @default(uuid()) @map("id")
+  source         String
+  type           String
+  payload        String
+  timestamp      DateTime @default(now()) @unique
+  queueMessages  QueueMessage[]
+}
+
+model QueueMessage {
+  id        String   @id @default(uuid()) @map("id")
+  messageId String
+  status    QueueStatus @default(PENDING)
+  retryCount Int
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+ 

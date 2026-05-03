@@ -1,0 +1,29 @@
+{
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "_version": "24.0.0",
+  "compilerOptions": {
+    "lib": ["es2024"],
+    "module": "es2022",
+    "target": "es2024",
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "declaration": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}
