@@ -1,21 +1,26 @@
 import type { Request } from "../../@types/contracts/Request";
-
-type PayloadObject = Record<string, string>;
-type ParsedPayload = PayloadObject | PayloadObject[];
+import { Payload } from "@/@types/contracts/MessageBody";
+import { ClientServicePayload } from "@/@types/contracts/ClientServicePayload";
+import { DNSServicePayload } from "@/@types/contracts/DNSServicePayload";
+import { RegistryServicePayload } from "@/@types/contracts/RegistryServicePayload";
+import { ServiceInstance } from "@/@types/clients/ServiceInstance";
 
 export class ResponseParser {
-  public static deserialize(rawRequest: string): Request | void {
+  public static deserialize(rawRequest: string): Request {
     try {
-      const parts = rawRequest.split("|");
+      const request = rawRequest.trim();
+
+      const parts = request.split("|");
 
       if (parts.length !== 3) {
         throw new Error(
-          "Requisição com campos diferentes do esperado " + rawRequest
+          "Requisição com campos diferentes do esperado " + request
         );
       }
 
       const [method, path, rawBody] = parts;
-      const bodyParts = rawBody.split(";");
+
+      const bodyParts = rawBody.split(";").map((part) => part.trim());
 
       if (bodyParts.length !== 4) {
         throw new Error(
@@ -38,78 +43,151 @@ export class ResponseParser {
         },
       };
     } catch (error: any) {
-      throw new Error(
-        `Formato inválido de corpo: ${error.message}`
-      );
+      throw new Error(`Formato inválido de corpo: ${error.message}`);
     }
   }
 
-  private static parsePayload(rawPayload: string): ParsedPayload {
-    if (!rawPayload || rawPayload.trim() === "") {
+  private static parsePayload(rawPayload: string): Payload {
+    const payload = rawPayload.trim();
+
+    if (!payload) {
       throw new Error("Payload vazio");
     }
 
-    const payload = rawPayload.trim();
-
-    if (this.isDispatchPayload(payload)) {
-      return this.parseDispatchPayload(payload);
+    if (this.isClientServicePayload(payload)) {
+      return this.parseClientServicePayload(payload);
     }
 
-    if (payload.includes("&")) {
-      return payload
-        .split("&")
-        .filter(Boolean)
-        .map((item) => this.parsePayloadObject(item));
+    if (this.isRegistryServicePayload(payload)) {
+      return this.parseRegistryServicePayload(payload);
     }
 
-    return this.parsePayloadObject(payload);
+    if (this.isDNSServicePayload(payload)) {
+      return this.parseDNSServicePayload(payload);
+    }
+
+    throw new Error("Tipo de payload não reconhecido: " + rawPayload);
   }
 
-  private static isDispatchPayload(rawPayload: string): boolean {
-    return rawPayload.startsWith("service=") && rawPayload.includes(",payload=");
+  private static isClientServicePayload(rawPayload: string): boolean {
+    return (
+      rawPayload.startsWith("service=") &&
+      rawPayload.includes(",apiPayload=")
+    );
   }
 
-  private static parseDispatchPayload(rawPayload: string): PayloadObject {
-    const payloadMarker = ",payload=";
-    const markerIndex = rawPayload.indexOf(payloadMarker);
+  private static isDNSServicePayload(rawPayload: string): boolean {
+    return (
+      rawPayload.includes("instanceName=") &&
+      rawPayload.includes("ip=")
+    );
+  }
+
+  private static isRegistryServicePayload(rawPayload: string): boolean {
+    return (
+      rawPayload.includes("id=") &&
+      rawPayload.includes("target=") &&
+      rawPayload.includes("instanceName=") &&
+      rawPayload.includes("status=")
+    );
+  }
+
+  private static parseClientServicePayload(
+    rawPayload: string
+  ): ClientServicePayload {
+    const apiPayloadMarker = ",apiPayload=";
+    const markerIndex = rawPayload.indexOf(apiPayloadMarker);
 
     if (markerIndex === -1) {
-      throw new Error("Payload de dispatch inválido: campo payload ausente");
+      throw new Error(
+        "Payload inválido. Esperado: service=xxx,apiPayload=yyy"
+      );
     }
 
-    const servicePart = rawPayload.slice(0, markerIndex);
-    const originalPayload = rawPayload.slice(markerIndex + payloadMarker.length);
+    const metadataPart = rawPayload.slice(0, markerIndex);
+    const apiPayload = rawPayload.slice(markerIndex + apiPayloadMarker.length);
 
-    const separatorIndex = servicePart.indexOf("=");
+    const metadata = this.parseKeyValueList(metadataPart);
 
-    if (separatorIndex === -1) {
-      throw new Error("Campo service inválido");
+    if (!metadata.service) {
+      throw new Error("Payload inválido. Campo service ausente.");
     }
 
-    const serviceKey = servicePart.slice(0, separatorIndex).trim();
-    const serviceValue = servicePart.slice(separatorIndex + 1).trim();
-
-    if (serviceKey !== "service") {
-      throw new Error(`Campo esperado service, recebido ${serviceKey}`);
-    }
-
-    if (!serviceValue) {
-      throw new Error("Campo service vazio");
-    }
-
-    if (!originalPayload.trim()) {
-      throw new Error("Payload original vazio");
+    if (!apiPayload.trim()) {
+      throw new Error("Payload inválido. Campo apiPayload vazio.");
     }
 
     return {
-      service: serviceValue,
-      payload: originalPayload.trim(),
+      kind: "CLIENT_SERVICE_PAYLOAD",
+      service: metadata.service,
+      apiPayload: apiPayload.trim(),
     };
   }
 
-  private static parsePayloadObject(rawPayload: string): PayloadObject {
-    const payload: PayloadObject = {};
-    const fields = rawPayload.split(",");
+  private static parseDNSServicePayload(rawPayload: string): DNSServicePayload {
+    const payload = this.parseKeyValueList(rawPayload);
+
+    if (!payload.instanceName) {
+      throw new Error("Payload DNS inválido. Campo instanceName ausente.");
+    }
+
+    if (!payload.ip) {
+      throw new Error("Payload DNS inválido. Campo ip ausente.");
+    }
+
+    return {
+      kind: "DNS_SERVICE_PAYLOAD",
+      instanceName: payload.instanceName,
+      ip: payload.ip,
+    };
+  }
+
+  private static parseRegistryServicePayload(
+    rawPayload: string
+  ): RegistryServicePayload {
+    const rawInstances = rawPayload.includes("&")
+      ? rawPayload.split("&").filter(Boolean)
+      : [rawPayload];
+
+    const instances: ServiceInstance[] = rawInstances.map((rawInstance) => {
+      const payload = this.parseKeyValueList(rawInstance);
+
+      if (!payload.id) {
+        throw new Error("Payload Registry inválido. Campo id ausente.");
+      }
+
+      if (!payload.target) {
+        throw new Error("Payload Registry inválido. Campo target ausente.");
+      }
+
+      if (!payload.instanceName) {
+        throw new Error(
+          "Payload Registry inválido. Campo instanceName ausente."
+        );
+      }
+
+      if (!payload.status) {
+        throw new Error("Payload Registry inválido. Campo status ausente.");
+      }
+
+      return {
+        id: payload.id,
+        target: payload.target,
+        instanceName: payload.instanceName,
+        status: payload.status,
+      };
+    });
+
+    return {
+      kind: "REGISTRY_SERVICE_PAYLOAD",
+      instances,
+    };
+  }
+
+  private static parseKeyValueList(raw: string): Record<string, string> {
+    const result: Record<string, string> = {};
+
+    const fields = raw.split(",");
 
     for (const field of fields) {
       const separatorIndex = field.indexOf("=");
@@ -125,10 +203,10 @@ export class ResponseParser {
         throw new Error(`Campo de payload inválido: ${field}`);
       }
 
-      payload[key] = value;
+      result[key] = value;
     }
 
-    return payload;
+    return result;
   }
 
   public static serialize(response: {

@@ -26,6 +26,10 @@ export class RegistryServiceClient {
 
     const payload = parsed.body.payload;
 
+    if (payload.kind !== "REGISTRY_SERVICE_PAYLOAD") {
+      throw new Error("Payload inválido retornado pelo Service Registry");
+    }
+
     if (!Array.isArray(payload)) {
       throw new Error("Resposta do Registry deveria ser uma lista de instâncias");
     }

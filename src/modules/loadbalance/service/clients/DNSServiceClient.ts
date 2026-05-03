@@ -2,11 +2,6 @@ import { SocketClient } from "@/infra/client/SocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 import { DNSResolution } from "@/@types/clients/DNSResolution";
 
-type DNSPayload = {
-  instanceName: string;
-  ip: string;
-};
-
 export class DNSServiceClient {
   constructor(
     private readonly socketClient: SocketClient,
@@ -31,7 +26,7 @@ export class DNSServiceClient {
 
     const payload = parsed.body.payload;
 
-    if (!this.isDNSPayload(payload)) {
+    if (payload.kind !== "DNS_SERVICE_PAYLOAD") {
       throw new Error("Payload inválido retornado pelo DNS Service");
     }
 
@@ -39,16 +34,6 @@ export class DNSServiceClient {
       instanceName: payload.instanceName,
       ip: payload.ip,
     };
-  }
-
-  private isDNSPayload(payload: unknown): payload is DNSPayload {
-    return (
-      typeof payload === "object" &&
-      payload !== null &&
-      !Array.isArray(payload) &&
-      typeof (payload as Record<string, unknown>).instanceName === "string" &&
-      typeof (payload as Record<string, unknown>).ip === "string"
-    );
   }
 
   private buildResolveRequest(instanceName: string): string {

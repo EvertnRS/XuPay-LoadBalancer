@@ -6,7 +6,6 @@ import { RegistryServiceClient } from "./clients/RegistryServiceClient";
 import { DNSServiceClient } from "./clients/DNSServiceClient";
 import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
-import { DispatchPayload } from "@/@types/contracts/DispatchPayload";
 
 export class LoadBalanceService {
   private serviceRegistryClient: RegistryServiceClient;
@@ -34,12 +33,12 @@ export class LoadBalanceService {
 
   public async send(messageBody: MessageBody, socket: Socket): Promise<void> {
     try {
-      if (!this.isDispatchPayload(messageBody.payload)) {
+      if (messageBody.payload.kind !== "CLIENT_SERVICE_PAYLOAD") {
         throw new Error("Payload inválido para o LoadBalancer");
       }
 
       const service = messageBody.payload.service;
-      const apiPayload = messageBody.payload.payload;
+      const apiPayload = messageBody.payload.apiPayload;
 
       const instances = await this.serviceRegistryClient.discover(service);
 
@@ -52,31 +51,18 @@ export class LoadBalanceService {
         selectedInstance.instanceName
       );
 
-      const responseFromTarget = await this.targetServiceClient.send({
+      await this.targetServiceClient.send({
         ip,
         service,
-        payload: apiPayload,
+        apiPayload,
       });
 
-      socket.write(responseFromTarget);
-      socket.end();
+
     } catch (error: any) {
       return ErrorHandler.handle(
         error.message ?? "Erro ao executar balanceamento",
         socket
       );
     }
-  }
-
-  private isDispatchPayload(
-    payload: MessageBody["payload"]
-  ): payload is DispatchPayload {
-    return (
-      typeof payload === "object" &&
-      payload !== null &&
-      !Array.isArray(payload) &&
-      typeof payload.service === "string" &&
-      typeof payload.payload === "string"
-    );
   }
 }

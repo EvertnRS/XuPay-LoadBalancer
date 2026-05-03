@@ -11,25 +11,25 @@ export class TargetServiceClient {
   public async send(params: {
     ip: string;
     service: string;
-    payload: string;
-  }): Promise<string> {
-    const request = this.buildTargetRequest(params.service, params.payload);
+    apiPayload: string;
+  }): Promise<void> {
+    const request = this.buildTargetRequest(params.service, params.apiPayload);
 
-    return this.socketClient.send(
+    await this.socketClient.send(
       params.ip,
       this.targetServicePort,
       request
     );
   }
 
-  private buildTargetRequest(service: string, payload: string): string {
+  private buildTargetRequest(service: string, apiPayload: string): string {
     return ResponseParser.serialize({
       method: "POST",
       path: service,
       body: {
         source: "LOAD_BALANCE",
         type: "REQUEST",
-        payload,
+        payload: apiPayload,
         timestamp: new Date().toISOString(),
       },
     });
