@@ -1,6 +1,8 @@
+import { Payload } from "./Payload";
+
 export type MessageBody = {
     source: string;
     type: string;
-    payload: string;
+    payload: Payload;
     timestamp: string;
 };

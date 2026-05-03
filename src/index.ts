@@ -3,28 +3,33 @@ import { ResponseParser } from './infra/parser/ResponseParser';
 import { ErrorHandler } from './infra/middleware/Error';
 import { Routes } from './routes/Routes';
 
+const routes = new Routes();
+
 const server = net.createServer((socket: net.Socket) => {
     console.log('Cliente conectado');
 
     socket.on('data', (data: Buffer) => {
         console.log('Recebido');
         
-        const request = ResponseParser.deserialize(data.toString(), socket);
+        try{
+            const request = ResponseParser.deserialize(data.toString(), socket);
 
-        if (!request) {
-            return ErrorHandler.handle('Requisição com formato inválido ' + request, socket);
+            if (!request) {
+                return ErrorHandler.handle("Requisição mal formatada", socket);
+            }
+
+            routes.handle(request, socket);
+            
+        } catch (error) {
+            return ErrorHandler.handle("Erro ao processar requisição", socket);
         }
+        });
 
-        const routes = new Routes();
-        routes.handle(request, socket);
-
+        socket.on('end', () => {
+            console.log('Cliente desconectado');
+        });
     });
 
-    socket.on('end', () => {
-        console.log('Cliente desconectado');
-    });
-});
-
-server.listen(4000, () => {
-    console.log('Servidor de processamento rodando na porta 4000');
+server.listen(5500, () => {
+    console.log('Servidor de processamento rodando na porta 5500');
 });
