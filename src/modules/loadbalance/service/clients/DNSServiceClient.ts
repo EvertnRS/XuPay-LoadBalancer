@@ -54,6 +54,6 @@ export class DNSServiceClient {
   private buildResolveRequest(instanceName: string): string {
     const payload = `instanceName=${instanceName}`;
 
-    return `GET|/dns|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
+    return `GET|dns|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
   }
 }

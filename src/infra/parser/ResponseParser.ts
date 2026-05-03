@@ -34,7 +34,7 @@ export class ResponseParser {
           source,
           type,
           payload,
-          timestamp,
+          timestamp: timestamp.trim(),
         },
       };
     } catch (error: any) {

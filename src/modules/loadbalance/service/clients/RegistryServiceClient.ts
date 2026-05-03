@@ -18,12 +18,6 @@ export class RegistryServiceClient {
       request
     );
 
-    /**
-     * Atenção:
-     * Seu ResponseParser atual exige Socket para ErrorHandler.
-     * Para client interno, o ideal é ter um parser que lance erro,
-     * não que escreva em socket.
-     */
     const parsed = ResponseParser.deserialize(rawResponse);
 
     if (!parsed) {
@@ -47,6 +41,6 @@ export class RegistryServiceClient {
   private buildDiscoverRequest(target: string): string {
     const payload = `target=${target}`;
 
-    return `GET|/instance|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
+    return `GET|instance|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
   }
 }

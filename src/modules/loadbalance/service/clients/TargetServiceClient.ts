@@ -25,7 +25,7 @@ export class TargetServiceClient {
   private buildTargetRequest(service: string, payload: string): string {
     return ResponseParser.serialize({
       method: "POST",
-      path: "/" + service,
+      path: service,
       body: {
         source: "LOAD_BALANCE",
         type: "REQUEST",
