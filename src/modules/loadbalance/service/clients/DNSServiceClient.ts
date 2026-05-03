@@ -23,10 +23,7 @@ export class DNSServiceClient {
       request
     );
 
-    const parsed = ResponseParser.deserialize(rawResponse, {
-      write: () => {},
-      end: () => {},
-    } as any);
+    const parsed = ResponseParser.deserialize(rawResponse);
 
     if (!parsed) {
       throw new Error("Resposta inválida do DNS Service");
@@ -57,6 +54,6 @@ export class DNSServiceClient {
   private buildResolveRequest(instanceName: string): string {
     const payload = `instanceName=${instanceName}`;
 
-    return `GET|/|LOAD_BALANCER;RESOLVE;${payload};${new Date().toISOString()}`;
+    return `GET|/dns|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
   }
 }

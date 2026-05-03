@@ -1,16 +1,12 @@
 import { Socket } from "net";
 import { MessageBody } from "@/@types/contracts/MessageBody";
-import { ServiceInstance } from "@/@types/clients/ServiceInstance";
+import { RoundRobinLoadBalancer } from "./RoundRobinBalancer";
 import { SocketClient } from "@/infra/client/SocketClient";
-import { RegistryServiceClient } from "./RegistryServiceClient";
-import { DNSServiceClient } from "./DNSServiceClient";
-import { TargetServiceClient } from "./TargetServiceClient";
+import { RegistryServiceClient } from "./clients/RegistryServiceClient";
+import { DNSServiceClient } from "./clients/DNSServiceClient";
+import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
-
-type DispatchPayload = {
-  target: string;
-  payload: string;
-};
+import { DispatchPayload } from "@/@types/contracts/DispatchPayload";
 
 export class LoadBalanceService {
   private serviceRegistryClient: RegistryServiceClient;
@@ -39,19 +35,16 @@ export class LoadBalanceService {
   public async send(messageBody: MessageBody, socket: Socket): Promise<void> {
     try {
       if (!this.isDispatchPayload(messageBody.payload)) {
-        return ErrorHandler.handle(
-          "Payload inválido para o LoadBalancer",
-          socket
-        );
+        throw new Error("Payload inválido para o LoadBalancer");
       }
 
-      const target = messageBody.payload.target;
-      const originalPayload = messageBody.payload.payload;
+      const service = messageBody.payload.service;
+      const apiPayload = messageBody.payload.payload;
 
-      const instances = await this.serviceRegistryClient.discover(target);
+      const instances = await this.serviceRegistryClient.discover(service);
 
       const selectedInstance = RoundRobinLoadBalancer.selectInstance(
-        target,
+        service,
         instances
       );
 
@@ -61,8 +54,8 @@ export class LoadBalanceService {
 
       const responseFromTarget = await this.targetServiceClient.send({
         ip,
-        target,
-        payload: originalPayload,
+        service,
+        payload: apiPayload,
       });
 
       socket.write(responseFromTarget);
@@ -82,33 +75,8 @@ export class LoadBalanceService {
       typeof payload === "object" &&
       payload !== null &&
       !Array.isArray(payload) &&
-      typeof payload.target === "string" &&
+      typeof payload.service === "string" &&
       typeof payload.payload === "string"
     );
-  }
-}
-
-class RoundRobinLoadBalancer {
-  private static indexes = new Map<string, number>();
-
-  public static selectInstance(
-    target: string,
-    instances: ServiceInstance[]
-  ): ServiceInstance {
-    const healthyInstances = instances.filter(
-      (instance) => instance.status === "UP"
-    );
-
-    if (!healthyInstances.length) {
-      throw new Error(`Nenhuma instância disponível para o target: ${target}`);
-    }
-
-    const currentIndex = this.indexes.get(target) ?? 0;
-
-    const selected = healthyInstances[currentIndex % healthyInstances.length];
-
-    this.indexes.set(target, currentIndex + 1);
-
-    return selected;
   }
 }

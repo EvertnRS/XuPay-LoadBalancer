@@ -1,19 +1,16 @@
 import type { Request } from "../../@types/contracts/Request";
-import { Socket } from "net";
-import { ErrorHandler } from "../middleware/Error";
 
 type PayloadObject = Record<string, string>;
 type ParsedPayload = PayloadObject | PayloadObject[];
 
 export class ResponseParser {
-  public static deserialize(rawRequest: string, socket: Socket): Request | void {
+  public static deserialize(rawRequest: string): Request | void {
     try {
       const parts = rawRequest.split("|");
 
       if (parts.length !== 3) {
-        return ErrorHandler.handle(
-          "Requisição com campos diferentes do esperado " + rawRequest,
-          socket
+        throw new Error(
+          "Requisição com campos diferentes do esperado " + rawRequest
         );
       }
 
@@ -21,9 +18,8 @@ export class ResponseParser {
       const bodyParts = rawBody.split(";");
 
       if (bodyParts.length !== 4) {
-        return ErrorHandler.handle(
-          "Corpo da requisição com campos diferentes do esperado " + rawRequest,
-          socket
+        throw new Error(
+          "Corpo da requisição com campos diferentes do esperado " + rawBody
         );
       }
 
@@ -42,9 +38,8 @@ export class ResponseParser {
         },
       };
     } catch (error: any) {
-      return ErrorHandler.handle(
-        `Formato inválido de corpo: ${error.message}`,
-        socket
+      throw new Error(
+        `Formato inválido de corpo: ${error.message}`
       );
     }
   }
@@ -71,7 +66,7 @@ export class ResponseParser {
   }
 
   private static isDispatchPayload(rawPayload: string): boolean {
-    return rawPayload.startsWith("target=") && rawPayload.includes(",payload=");
+    return rawPayload.startsWith("service=") && rawPayload.includes(",payload=");
   }
 
   private static parseDispatchPayload(rawPayload: string): PayloadObject {
@@ -82,24 +77,24 @@ export class ResponseParser {
       throw new Error("Payload de dispatch inválido: campo payload ausente");
     }
 
-    const targetPart = rawPayload.slice(0, markerIndex);
+    const servicePart = rawPayload.slice(0, markerIndex);
     const originalPayload = rawPayload.slice(markerIndex + payloadMarker.length);
 
-    const separatorIndex = targetPart.indexOf("=");
+    const separatorIndex = servicePart.indexOf("=");
 
     if (separatorIndex === -1) {
-      throw new Error("Campo target inválido");
+      throw new Error("Campo service inválido");
     }
 
-    const targetKey = targetPart.slice(0, separatorIndex).trim();
-    const targetValue = targetPart.slice(separatorIndex + 1).trim();
+    const serviceKey = servicePart.slice(0, separatorIndex).trim();
+    const serviceValue = servicePart.slice(separatorIndex + 1).trim();
 
-    if (targetKey !== "target") {
-      throw new Error(`Campo esperado target, recebido ${targetKey}`);
+    if (serviceKey !== "service") {
+      throw new Error(`Campo esperado service, recebido ${serviceKey}`);
     }
 
-    if (!targetValue) {
-      throw new Error("Campo target vazio");
+    if (!serviceValue) {
+      throw new Error("Campo service vazio");
     }
 
     if (!originalPayload.trim()) {
@@ -107,7 +102,7 @@ export class ResponseParser {
     }
 
     return {
-      target: targetValue,
+      service: serviceValue,
       payload: originalPayload.trim(),
     };
   }

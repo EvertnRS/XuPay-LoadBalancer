@@ -15,7 +15,7 @@ export class Routes {
 
 	public handle(request:Request, socket:Socket): void  {
         
-        if (request.method == 'POST' && request.path == '/send') {
+        if (request.method == 'POST' && request.path == 'send' && request.body.type === 'REQUEST') {
             this.loadBalanceController.send(request, socket);
         }
         else {

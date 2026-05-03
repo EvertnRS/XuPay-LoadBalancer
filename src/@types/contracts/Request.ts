@@ -16,7 +16,7 @@ enum Source {
 
 enum Type {
   RESPONSE = "RESPONSE",
-  SEND_MESSAGE = "SEND_MESSAGE"
+  REQUEST = "REQUEST"
 }
 
 export function isValidBodyRequest(

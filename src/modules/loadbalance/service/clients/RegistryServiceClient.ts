@@ -1,12 +1,6 @@
 import { SocketClient } from "@/infra/client/SocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
-
-export type ServiceInstance = {
-  id: string;
-  target: string;
-  instanceName: string;
-  status: string;
-};
+import { ServiceInstance } from "@/@types/clients/ServiceInstance";
 
 export class RegistryServiceClient {
   constructor(
@@ -30,10 +24,7 @@ export class RegistryServiceClient {
      * Para client interno, o ideal é ter um parser que lance erro,
      * não que escreva em socket.
      */
-    const parsed = ResponseParser.deserialize(rawResponse, {
-      write: () => {},
-      end: () => {},
-    } as any);
+    const parsed = ResponseParser.deserialize(rawResponse);
 
     if (!parsed) {
       throw new Error("Resposta inválida do Service Registry");
@@ -56,6 +47,6 @@ export class RegistryServiceClient {
   private buildDiscoverRequest(target: string): string {
     const payload = `target=${target}`;
 
-    return `GET|/service|LOAD_BALANCER;DISCOVER;${payload};${new Date().toISOString()}`;
+    return `GET|/instance|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
   }
 }
