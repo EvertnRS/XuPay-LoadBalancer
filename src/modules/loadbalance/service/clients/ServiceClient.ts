@@ -10,11 +10,12 @@ export class ServiceClient {
 
   public async send(params: {
     host: string;
+    path:string;
     service: string;
     apiPayload: string;
     queueMessageId: string;
   }): Promise<void> {
-    const request = this.buildTargetRequest(params.queueMessageId, params.service, params.apiPayload);
+    const request = this.buildTargetRequest(params.queueMessageId, params.path, params.service, params.apiPayload);
 
     await this.socketClient.send(
       params.host,
@@ -23,10 +24,10 @@ export class ServiceClient {
     );
   }
 
-  private buildTargetRequest(queueMessageId: string, service: string, apiPayload: string): string {
+  private buildTargetRequest(queueMessageId: string, path: string, service: string, apiPayload: string): string {
     return ResponseParser.serialize({
       method: "POST",
-      path: service,
+      path: path,
       body: {
         source: "LOAD_BALANCE",
         type: "REQUEST",

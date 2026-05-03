@@ -58,7 +58,8 @@ export class LoadBalanceService {
       await this.serviceClient.send({
         host: serviceClientHost,
         queueMessageId,
-        service: 'retry',
+        path: 'retry',
+        service,
         apiPayload,
       });
 
