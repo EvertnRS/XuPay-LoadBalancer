@@ -1,16 +1,17 @@
 import { Socket } from "net";
-import { MessageBody } from "@/@types/contracts/MessageBody";
 import { RoundRobinLoadBalancer } from "./RoundRobinBalancer";
 import { SocketClient } from "@/infra/client/SocketClient";
 import { RegistryServiceClient } from "./clients/RegistryServiceClient";
 import { DNSServiceClient } from "./clients/DNSServiceClient";
 import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
+import { ServiceClient } from "./clients/ServiceClient";
 
 export class LoadBalanceService {
   private registryServiceClient: RegistryServiceClient;
   private dnsServiceClient: DNSServiceClient;
   private targetServiceClient: TargetServiceClient;
+  private serviceClient: ServiceClient;
 
   constructor() {
     const socketClient = new SocketClient();
@@ -28,17 +29,11 @@ export class LoadBalanceService {
       );
 
     this.targetServiceClient = new TargetServiceClient(socketClient);
+    this.serviceClient = new ServiceClient(socketClient);
   }
 
-  public async send(messageBody: MessageBody, socket: Socket): Promise<void> {
+  public async send(queueMessageId: string, service: string, apiPayload: string, socket: Socket): Promise<void> {
     try {
-      if (messageBody.payload.kind !== "CLIENT_SERVICE_PAYLOAD") {
-        throw new Error("Payload inválido para o LoadBalancer");
-      }
-
-      const service = messageBody.payload.service;
-      const apiPayload = messageBody.payload.apiPayload;
-
       const instances = await this.registryServiceClient.discover(service);
 
       const selectedInstance = RoundRobinLoadBalancer.selectInstance(
@@ -46,18 +41,27 @@ export class LoadBalanceService {
         instances
       );
 
-      const { ip } = await this.dnsServiceClient.resolve(
+      const { host } = await this.dnsServiceClient.resolve(
         selectedInstance.instanceName
       );
 
       await this.targetServiceClient.send({
-        ip,
+        host,
         service,
         apiPayload,
       });
 
 
     } catch (error: any) {
+      const serviceClientHost = process.env.SERVICE_CLIENT_HOST || " ";
+
+      await this.serviceClient.send({
+        host: serviceClientHost,
+        queueMessageId,
+        service: 'retry',
+        apiPayload,
+      });
+
       return ErrorHandler.handle(
         error.message ?? "Erro ao executar balanceamento",
         socket

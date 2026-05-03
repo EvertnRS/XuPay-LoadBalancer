@@ -15,8 +15,8 @@ export class Routes {
 
 	public handle(request:Request, socket:Socket): void  {
         
-        if (request.method == 'POST' && request.path == 'send' && request.body.type === 'REQUEST') {
-            this.loadBalanceController.send(request, socket);
+        if (request.method == 'POST' && request.path == 'redirect' && request.body.type === 'REQUEST') {
+            this.loadBalanceController.redirect(request, socket);
         }
         else {
             ErrorHandler.handle("Rota não encontrada", socket);       

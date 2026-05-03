@@ -32,7 +32,7 @@ export class DNSServiceClient {
 
     return {
       instanceName: payload.instanceName,
-      ip: payload.ip,
+      host: payload.host,
     };
   }
 

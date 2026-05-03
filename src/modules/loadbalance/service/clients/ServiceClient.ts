@@ -1,8 +1,8 @@
 import { SocketClient } from "@/infra/client/SocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
-export class TargetServiceClient {
-  private readonly targetServicePort = parseInt(process.env.TARGET_SERVICE_PORT || " ")
+export class ServiceClient {
+  private readonly targetServicePort = parseInt(process.env.SERVICE_CLIENTPORT || " ")
 
   constructor(
     private readonly socketClient: SocketClient
@@ -12,8 +12,9 @@ export class TargetServiceClient {
     host: string;
     service: string;
     apiPayload: string;
+    queueMessageId: string;
   }): Promise<void> {
-    const request = this.buildTargetRequest(params.service, params.apiPayload);
+    const request = this.buildTargetRequest(params.queueMessageId, params.service, params.apiPayload);
 
     await this.socketClient.send(
       params.host,
@@ -22,14 +23,18 @@ export class TargetServiceClient {
     );
   }
 
-  private buildTargetRequest(service: string, apiPayload: string): string {
+  private buildTargetRequest(queueMessageId: string, service: string, apiPayload: string): string {
     return ResponseParser.serialize({
       method: "POST",
       path: service,
       body: {
         source: "LOAD_BALANCE",
         type: "REQUEST",
-        payload: apiPayload,
+        payload: {
+            queueMessageId,
+            service,
+            apiPayload
+        },
         timestamp: new Date().toISOString(),
       },
     });

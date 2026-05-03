@@ -1,4 +1,5 @@
 import type { Request } from "../../@types/contracts/Request";
+import { Response } from "@/@types/contracts/Response";
 import { Payload } from "@/@types/contracts/MessageBody";
 import { ClientServicePayload } from "@/@types/contracts/ClientServicePayload";
 import { DNSServicePayload } from "@/@types/contracts/DNSServicePayload";
@@ -86,7 +87,7 @@ export class ResponseParser {
   private static isRegistryServicePayload(rawPayload: string): boolean {
     return (
       rawPayload.includes("id=") &&
-      rawPayload.includes("target=") &&
+      rawPayload.includes("service=") &&
       rawPayload.includes("instanceName=") &&
       rawPayload.includes("status=")
     );
@@ -100,7 +101,7 @@ export class ResponseParser {
 
     if (markerIndex === -1) {
       throw new Error(
-        "Payload inválido. Esperado: service=xxx,apiPayload=yyy"
+        "Payload inválido. Esperado: queueMessageId=xxx,service=xxx,apiPayload=yyy"
       );
     }
 
@@ -108,6 +109,10 @@ export class ResponseParser {
     const apiPayload = rawPayload.slice(markerIndex + apiPayloadMarker.length);
 
     const metadata = this.parseKeyValueList(metadataPart);
+
+    if (!metadata.queueMessageId) {
+      throw new Error("Payload inválido. Campo queueMessageId ausente.");
+    }
 
     if (!metadata.service) {
       throw new Error("Payload inválido. Campo service ausente.");
@@ -119,6 +124,7 @@ export class ResponseParser {
 
     return {
       kind: "CLIENT_SERVICE_PAYLOAD",
+      queueMessageId: metadata.queueMessageId,
       service: metadata.service,
       apiPayload: apiPayload.trim(),
     };
@@ -131,14 +137,14 @@ export class ResponseParser {
       throw new Error("Payload DNS inválido. Campo instanceName ausente.");
     }
 
-    if (!payload.ip) {
-      throw new Error("Payload DNS inválido. Campo ip ausente.");
+    if (!payload.host) {
+      throw new Error("Payload DNS inválido. Campo host ausente.");
     }
 
     return {
       kind: "DNS_SERVICE_PAYLOAD",
       instanceName: payload.instanceName,
-      ip: payload.ip,
+      host: payload.host,
     };
   }
 
@@ -209,16 +215,7 @@ export class ResponseParser {
     return result;
   }
 
-  public static serialize(response: {
-    method: string;
-    path: string;
-    body: {
-      source: string;
-      type: string;
-      payload: string;
-      timestamp: string;
-    };
-  }): string {
+  public static serialize(response: Response) : string {
     return `${response.method}|${response.path}|${response.body.source};${response.body.type};${response.body.payload};${response.body.timestamp}`;
   }
 }

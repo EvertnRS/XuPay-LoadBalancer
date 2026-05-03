@@ -9,13 +9,22 @@ export class LoadBalanceController {
         private loadBalanceService: LoadBalanceService
     ) {}
 
-    public send(request: Request, socket: Socket): void {
+    public redirect(request: Request, socket: Socket): void {
         const messageBody = isValidBodyRequest(request.body, socket);
 
         if (!messageBody) {
             return ErrorHandler.handle("Corpo da requisição inválido", socket);      
         }
 
-        this.loadBalanceService.send(request.body, socket);
+        if (messageBody.payload.kind !== "CLIENT_SERVICE_PAYLOAD") {
+            return ErrorHandler.handle("Tipo de mensagem inválido para esta rota: " + messageBody.type, socket);
+        }
+
+        this.loadBalanceService.send(
+            messageBody.payload.queueMessageId,
+            messageBody.payload.service,
+            messageBody.payload.apiPayload,
+            socket
+        );
     }
 }
