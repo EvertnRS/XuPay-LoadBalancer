@@ -8,25 +8,24 @@ import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
 
 export class LoadBalanceService {
-  private serviceRegistryClient: RegistryServiceClient;
+  private registryServiceClient: RegistryServiceClient;
   private dnsServiceClient: DNSServiceClient;
   private targetServiceClient: TargetServiceClient;
 
   constructor() {
     const socketClient = new SocketClient();
 
-    // TODO: Configurar host e port via variáveis de ambiente
-    this.serviceRegistryClient = new RegistryServiceClient(
+    this.registryServiceClient = new RegistryServiceClient(
       socketClient,
-      "localhost",
-      5000
+      process.env.REGISTRY_SERVICE_HOST || " ",
+      parseInt(process.env.REGISTRY_SERVICE_PORT || " ")
     );
 
     this.dnsServiceClient = new DNSServiceClient(
       socketClient,
-      "localhost",
-      4500
-    );
+      process.env.DNS_SERVICE_HOST || " ",
+      parseInt(process.env.DNS_SERVICE_PORT || " ")
+      );
 
     this.targetServiceClient = new TargetServiceClient(socketClient);
   }
@@ -40,7 +39,7 @@ export class LoadBalanceService {
       const service = messageBody.payload.service;
       const apiPayload = messageBody.payload.apiPayload;
 
-      const instances = await this.serviceRegistryClient.discover(service);
+      const instances = await this.registryServiceClient.discover(service);
 
       const selectedInstance = RoundRobinLoadBalancer.selectInstance(
         service,
