@@ -5,8 +5,8 @@ export type Response = {
     source: string;
     type: string;
     payload: {
-        queueMessageId: string;
-        service: string;
+        queueMessageId?: string;
+        service?: string;
         apiPayload: string;
     };
     timestamp: string;

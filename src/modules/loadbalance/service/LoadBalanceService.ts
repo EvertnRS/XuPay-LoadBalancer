@@ -48,6 +48,7 @@ export class LoadBalanceService {
       await this.targetServiceClient.send({
         host,
         service,
+        queueMessageId,
         apiPayload,
       });
 
