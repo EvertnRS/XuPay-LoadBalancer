@@ -10,16 +10,13 @@ import type { ServiceInstance } from "@/@types/clients/ServiceInstance";
 import type { JsonValue } from "@/@types/contracts/MessagePayload";
 import { JsonCodec } from "./JsonCodec";
 import type { JsonObject } from "./JsonCodec";
-
-type PayloadKind =
-  | ClientServicePayload["kind"]
-  | DNSServicePayload["kind"]
-  | RegistryServicePayload["kind"];
+import { GatewayPayload } from "@/@types/contracts/GatewayPayload";
 
 type ParsedPayload =
   | ClientServicePayload
   | DNSServicePayload
-  | RegistryServicePayload;
+  | RegistryServicePayload
+  | GatewayPayload;
 
 type SerializableRequest = {
   method: string;
@@ -114,8 +111,7 @@ export class ResponseParser {
     body: JsonObject
   ): Request["body"] {
     return {
-      payload: this.parsePayloadByPath(path, body),
-      timestamp: this.requiredString(body.timestamp, "timestamp"),
+      payload: this.parsePayloadByPath(path, body)
     };
   }
 
@@ -125,7 +121,7 @@ export class ResponseParser {
   ): ParsedPayload {
     const payload = this.extractPayloadObject(body);
 
-    if (path === "redirect" || path === "retry") {
+    if (path === "redirect") {
       return this.parseClientServicePayload(payload);
     }
 
@@ -136,27 +132,12 @@ export class ResponseParser {
     if (path === "resolve") {
       return this.parseDNSServicePayload(payload);
     }
-
-    if (this.hasKind(payload)) {
-      switch (payload.kind as PayloadKind) {
-        case "CLIENT_SERVICE_PAYLOAD":
-          return this.parseClientServicePayload(payload);
-        case "DNS_SERVICE_PAYLOAD":
-          return this.parseDNSServicePayload(payload);
-        case "REGISTRY_SERVICE_PAYLOAD":
-          return this.parseRegistryServicePayload(payload);
-      }
+  
+    if (path === "gateway/redirect") {
+      return this.parseGatewayPayload(payload);
     }
 
-    if (this.isClientServicePayload(payload)) {
-      return this.parseClientServicePayload(payload);
-    }
-
-    if (this.isDNSServicePayload(payload)) {
-      return this.parseDNSServicePayload(payload);
-    }
-
-    return this.parseRegistryServicePayload(payload);
+    return void 0 as never;
   }
 
   private static extractPayloadObject(body: JsonObject): JsonObject {
@@ -167,6 +148,16 @@ export class ResponseParser {
     }
 
     return body;
+  }
+
+  private static parseGatewayPayload(
+    payload: JsonObject
+  ): GatewayPayload {
+    return {
+      kind: "GATEWAY_PAYLOAD",
+      event: this.requiredString(payload.event, "event"),
+      apiPayload: this.requiredString(payload.apiPayload, "apiPayload"),
+    };
   }
 
   private static parseClientServicePayload(
@@ -220,29 +211,6 @@ export class ResponseParser {
       status: this.requiredString(instance.status, "status"),
       path: this.requiredString(instance.path, "path")
     };
-  }
-
-  private static hasKind(
-    payload: JsonObject
-  ): payload is JsonObject & { kind: PayloadKind } {
-    return typeof payload.kind === "string";
-  }
-
-  private static isClientServicePayload(
-    payload: JsonObject
-  ): payload is JsonObject {
-    return (
-      typeof payload.queueMessageId === "string" &&
-      typeof payload.event === "string" &&
-      typeof payload.apiPayload === "string"
-    );
-  }
-
-  private static isDNSServicePayload(payload: JsonObject): payload is JsonObject {
-    return (
-      typeof payload.instanceName === "string" &&
-      typeof payload.host === "string"
-    );
   }
 
   private static extractRegistryInstances(payload: JsonObject): JsonValue[] {

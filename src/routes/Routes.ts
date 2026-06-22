@@ -16,8 +16,13 @@ export class Routes {
 	public handle(request:Request, socket:Socket): void  {
         
         if (request.method == 'POST' && request.path == 'redirect') {
-            this.loadBalanceController.redirect(request, socket);
+            this.loadBalanceController.redirectMessage(request, socket);
+        } 
+        
+        else if (request.method == 'POST' && request.path == 'gateway/redirect') {
+            this.loadBalanceController.redirectRequest(request, socket);
         }
+
         else {
             ErrorHandler.handle("Rota não encontrada", socket);       
         }

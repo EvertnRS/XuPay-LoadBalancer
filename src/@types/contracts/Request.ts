@@ -31,16 +31,6 @@ export function isValidRequest(request: Request, socket: Socket): Request | void
     ip: socket.remoteAddress,
   };
 
-  if (
-    request.body.timestamp &&
-    !isValidIsoTimestampWithMilliseconds(request.body.timestamp)
-  ) {
-    return ErrorHandler.handle(
-      "Timestamp inválido: " + request.body.timestamp,
-      socket
-    );
-  }
-
   return request;
 }
 
@@ -116,21 +106,4 @@ function timingSafeEquals(received: string, expected: string): boolean {
   }
 
   return crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
-}
-
-function isValidIsoTimestampWithMilliseconds(timestamp: string): boolean {
-  const ISO_WITH_MILLISECONDS_REGEX =
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-
-  if (!ISO_WITH_MILLISECONDS_REGEX.test(timestamp)) {
-    return false;
-  }
-
-  const date = new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return false;
-  }
-
-  return date.toISOString() === timestamp;
 }

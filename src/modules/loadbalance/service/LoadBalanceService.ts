@@ -32,7 +32,7 @@ export class LoadBalanceService {
     this.serviceClient = new ServiceClient(socketClient);
   }
 
-  public async send(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
+  public async redirectMessage(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
     try {
       const instances = await this.registryServiceClient.discover(event);
 
@@ -65,6 +65,31 @@ export class LoadBalanceService {
         error.message ?? "Erro ao executar balanceamento",
         socket
       );
+    }
+  }
+
+  public async redirectRequest(event: string, apiPayload: string, socket: Socket): Promise<void> {
+    try {
+      const instances = await this.registryServiceClient.discover(event);
+
+      const selectedInstance = RoundRobinLoadBalancer.selectInstance(
+        event,
+        instances
+      );
+
+      const { host } = await this.dnsServiceClient.resolve(
+        selectedInstance.instanceName
+      );
+
+      await this.targetServiceClient.send({
+        host,
+        path: selectedInstance.path,
+        apiPayload,
+      });
+
+    } catch (error: any) {
+      return ErrorHandler.handle(error.message ?? "Erro ao executar balanceamento",socket);
+      
     }
   }
 }
