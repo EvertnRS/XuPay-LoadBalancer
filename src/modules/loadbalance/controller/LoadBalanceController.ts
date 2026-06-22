@@ -1,7 +1,7 @@
 import { Socket } from "net";
 import type { Request } from "../../../@types/contracts/Request";
 import { LoadBalanceService } from "../service/LoadBalanceService";
-import { isValidBodyRequest } from "../../../@types/contracts/Request";
+import { isValidRequest } from "../../../@types/contracts/Request";
 import { ErrorHandler } from "@/infra/middleware/Error";
 
 export class LoadBalanceController {
@@ -10,19 +10,21 @@ export class LoadBalanceController {
     ) {}
 
     public redirect(request: Request, socket: Socket): void {
-        const messageBody = isValidBodyRequest(request.body, socket);
+        const validRequest = isValidRequest(request, socket);
 
-        if (!messageBody) {
+        if (!validRequest) {
             return ErrorHandler.handle("Corpo da requisição inválido", socket);      
         }
 
+        const messageBody = validRequest.body;
+
         if (messageBody.payload.kind !== "CLIENT_SERVICE_PAYLOAD") {
-            return ErrorHandler.handle("Tipo de mensagem inválido para esta rota: " + messageBody.type, socket);
+            return ErrorHandler.handle("Requisição inválida para esta rota", socket);
         }
 
         this.loadBalanceService.send(
             messageBody.payload.queueMessageId,
-            messageBody.payload.service,
+            messageBody.payload.event,
             messageBody.payload.apiPayload,
             socket
         );

@@ -56,9 +56,9 @@ export class LoadBalanceService {
     
       await this.serviceClient.send({
         host: process.env.SERVICE_CLIENT_HOST || '',
-        queueMessageId,
         event,
         apiPayload,
+        queueMessageId
       });
 
       return ErrorHandler.handle(

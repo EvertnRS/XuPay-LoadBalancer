@@ -15,7 +15,7 @@ export class Routes {
 
 	public handle(request:Request, socket:Socket): void  {
         
-        if (request.method == 'POST' && request.path == 'redirect' && request.body.type === 'REQUEST') {
+        if (request.method == 'POST' && request.path == 'redirect') {
             this.loadBalanceController.redirect(request, socket);
         }
         else {

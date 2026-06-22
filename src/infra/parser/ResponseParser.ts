@@ -114,8 +114,6 @@ export class ResponseParser {
     body: JsonObject
   ): Request["body"] {
     return {
-      source: this.requiredString(body.source, "source"),
-      type: this.requiredString(body.type, "type"),
       payload: this.parsePayloadByPath(path, body),
       timestamp: this.requiredString(body.timestamp, "timestamp"),
     };
@@ -135,7 +133,7 @@ export class ResponseParser {
       return this.parseRegistryServicePayload(payload);
     }
 
-    if (path === "dns") {
+    if (path === "resolve") {
       return this.parseDNSServicePayload(payload);
     }
 
