@@ -3,6 +3,7 @@ import type { Request } from "../../../@types/contracts/Request";
 import { LoadBalanceService } from "../service/LoadBalanceService";
 import { isValidRequest } from "../../../@types/contracts/Request";
 import { ErrorHandler } from "@/infra/middleware/Error";
+import { ClientServicePayload } from "@/@types/contracts/ClientServicePayload";
 
 export class LoadBalanceController {
     constructor(
@@ -16,16 +17,12 @@ export class LoadBalanceController {
             return ErrorHandler.handle("Corpo da requisição inválido", socket);      
         }
 
-        const messageBody = validRequest.body;
-
-        if (messageBody.payload.kind !== "CLIENT_SERVICE_PAYLOAD") {
-            return ErrorHandler.handle("Requisição inválida para esta rota", socket);
-        }
+        const {queueMessageId, event, apiPayload} = validRequest.body.payload as ClientServicePayload;
 
         this.loadBalanceService.send(
-            messageBody.payload.queueMessageId,
-            messageBody.payload.event,
-            messageBody.payload.apiPayload,
+            queueMessageId,
+            event,
+            apiPayload,
             socket
         );
     }
