@@ -43,14 +43,14 @@ export class RegistryServiceClient {
     }));
   }
 
-  private buildDiscoverRequest(target: string): string {
+  private buildDiscoverRequest(event: string): string {
     return ResponseParser.serialize({
       method: "GET",
-      path: "instance",
+      path: "discover",
       service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
       secret: process.env.XUPAY_SERVICE_SECRET,
       body: {
-        target
+        event
       },
     });
   }
