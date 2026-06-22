@@ -1,4 +1,4 @@
-import type { JsonValue } from "./MessagePayload";
+import type { JsonValue } from "./JsonValue";
 import type { RequestHeaders } from "./Request";
 
 export type Response = {

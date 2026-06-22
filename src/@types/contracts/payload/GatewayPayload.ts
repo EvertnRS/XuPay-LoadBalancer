@@ -1,4 +1,4 @@
-import { PayloadBase } from "./PayloadBase";
+import { PayloadBase } from "../PayloadBase";
 
 export type GatewayPayload = PayloadBase & {
   kind: "GATEWAY_PAYLOAD";

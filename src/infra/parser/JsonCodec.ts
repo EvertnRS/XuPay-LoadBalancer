@@ -1,4 +1,4 @@
-import type { JsonValue } from "@/@types/contracts/MessagePayload";
+import type { JsonValue } from "@/@types/contracts/JsonValue";
 
 export type JsonObject = { [key: string]: JsonValue };
 

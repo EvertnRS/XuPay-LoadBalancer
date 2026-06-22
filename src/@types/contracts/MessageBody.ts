@@ -1,7 +1,7 @@
-import { ClientServicePayload } from "./ClientServicePayload";
-import { DNSServicePayload } from "./DNSServicePayload";
-import { GatewayPayload } from "./GatewayPayload";
-import { RegistryServicePayload } from "./RegistryServicePayload";
+import { ClientServicePayload } from "./payload/ClientServicePayload";
+import { DNSServicePayload } from "./payload/DNSServicePayload";
+import { GatewayPayload } from "./payload/GatewayPayload";
+import { RegistryServicePayload } from "./payload/RegistryServicePayload";
 
 export type Payload = ClientServicePayload | DNSServicePayload | RegistryServicePayload | GatewayPayload;
 

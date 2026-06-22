@@ -3,8 +3,8 @@ import type { Request } from "../../../@types/contracts/Request";
 import { LoadBalanceService } from "../service/LoadBalanceService";
 import { isValidRequest } from "../../../@types/contracts/Request";
 import { ErrorHandler } from "@/infra/middleware/Error";
-import { ClientServicePayload } from "@/@types/contracts/ClientServicePayload";
-import { GatewayPayload } from "@/@types/contracts/GatewayPayload";
+import { ClientServicePayload } from "@/@types/contracts/payload/ClientServicePayload";
+import { GatewayPayload } from "@/@types/contracts/payload/GatewayPayload";
 
 export class LoadBalanceController {
     constructor(

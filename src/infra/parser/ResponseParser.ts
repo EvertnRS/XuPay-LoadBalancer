@@ -3,14 +3,14 @@ import {
   normalizePath,
 } from "@/@types/contracts/Request";
 import type { Request, RequestHeaders } from "@/@types/contracts/Request";
-import type { ClientServicePayload } from "@/@types/contracts/ClientServicePayload";
-import type { DNSServicePayload } from "@/@types/contracts/DNSServicePayload";
-import type { RegistryServicePayload } from "@/@types/contracts/RegistryServicePayload";
+import type { ClientServicePayload } from "@/@types/contracts/payload/ClientServicePayload";
+import type { DNSServicePayload } from "@/@types/contracts/payload/DNSServicePayload";
+import type { RegistryServicePayload } from "@/@types/contracts/payload/RegistryServicePayload";
 import type { ServiceInstance } from "@/@types/clients/ServiceInstance";
-import type { JsonValue } from "@/@types/contracts/MessagePayload";
+import type { JsonValue } from "@/@types/contracts/JsonValue";
 import { JsonCodec } from "./JsonCodec";
 import type { JsonObject } from "./JsonCodec";
-import { GatewayPayload } from "@/@types/contracts/GatewayPayload";
+import { GatewayPayload } from "@/@types/contracts/payload/GatewayPayload";
 
 type ParsedPayload =
   | ClientServicePayload
