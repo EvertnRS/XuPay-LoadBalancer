@@ -10,11 +10,10 @@ export class TargetServiceClient {
 
   public async send(params: {
     host: string;
-    service: string;
-    queueMessageId: string;
+    path: string;
     apiPayload: string;
   }): Promise<void> {
-    const request = this.buildTargetRequest(params.queueMessageId, params.service, params.apiPayload);
+    const request = this.buildTargetRequest(params.path, params.apiPayload);
 
     await this.socketClient.send(
       params.host,
@@ -23,18 +22,14 @@ export class TargetServiceClient {
     );
   }
 
-  private buildTargetRequest(queueMessageId: string, service: string, apiPayload: string): string {
+  private buildTargetRequest(path: string, apiPayload: string): string {
     return ResponseParser.serialize({
       method: "POST",
-      path: service,
+      path: path,
+      service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
+      secret: process.env.XUPAY_SERVICE_SECRET,
       body: {
-        source: "LOAD_BALANCE",
-        type: "REQUEST",
-        payload: {
-          queueMessageId,
-          service,
-          apiPayload,
-        },
+        payload: apiPayload,
         timestamp: new Date().toISOString(),
       },
     });

@@ -32,12 +32,12 @@ export class LoadBalanceService {
     this.serviceClient = new ServiceClient(socketClient);
   }
 
-  public async send(queueMessageId: string, service: string, apiPayload: string, socket: Socket): Promise<void> {
+  public async send(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
     try {
-      const instances = await this.registryServiceClient.discover(service);
+      const instances = await this.registryServiceClient.discover(event);
 
       const selectedInstance = RoundRobinLoadBalancer.selectInstance(
-        service,
+        event,
         instances
       );
 
@@ -47,20 +47,17 @@ export class LoadBalanceService {
 
       await this.targetServiceClient.send({
         host,
-        service,
-        queueMessageId,
+        path: selectedInstance.path,
         apiPayload,
       });
 
 
     } catch (error: any) {
-      const serviceClientHost = process.env.SERVICE_CLIENT_HOST || " ";
-
+    
       await this.serviceClient.send({
-        host: serviceClientHost,
+        host: process.env.SERVICE_CLIENT_HOST || '',
         queueMessageId,
-        path: 'retry',
-        service,
+        event,
         apiPayload,
       });
 

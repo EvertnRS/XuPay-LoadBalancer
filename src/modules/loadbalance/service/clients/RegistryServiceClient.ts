@@ -9,8 +9,8 @@ export class RegistryServiceClient {
     private readonly registryPort: number
   ) {}
 
-  public async discover(target: string): Promise<ServiceInstance[]> {
-    const request = this.buildDiscoverRequest(target);
+  public async discover(event: string): Promise<ServiceInstance[]> {
+    const request = this.buildDiscoverRequest(event);
 
     const rawResponse = await this.socketClient.send(
       this.registryHost,
@@ -30,21 +30,28 @@ export class RegistryServiceClient {
       throw new Error("Payload inválido retornado pelo Service Registry");
     }
 
-    if (!Array.isArray(payload)) {
+    if (!Array.isArray(payload.instances)) {
       throw new Error("Resposta do Registry deveria ser uma lista de instâncias");
     }
 
-    return payload.map((item) => ({
+    return payload.instances.map((item) => ({
       id: item.id,
-      target: item.target,
+      event: item.event,
       instanceName: item.instanceName,
-      status: item.status
+      status: item.status,
+      path: item.path
     }));
   }
 
   private buildDiscoverRequest(target: string): string {
-    const payload = `target=${target}`;
-
-    return `GET|instance|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
+    return ResponseParser.serialize({
+      method: "GET",
+      path: "instance",
+      service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
+      secret: process.env.XUPAY_SERVICE_SECRET,
+      body: {
+        target
+      },
+    });
   }
 }

@@ -37,8 +37,14 @@ export class DNSServiceClient {
   }
 
   private buildResolveRequest(instanceName: string): string {
-    const payload = `instanceName=${instanceName}`;
-
-    return `GET|dns|LOAD_BALANCE;REQUEST;${payload};${new Date().toISOString()}`;
+    return ResponseParser.serialize({
+      method: "GET",
+      path: "resolve",
+      service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
+      secret: process.env.XUPAY_SERVICE_SECRET,
+      body: {
+        instanceName
+      },
+    });
   }
 }

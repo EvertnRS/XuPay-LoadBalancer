@@ -1,6 +1,7 @@
 export type ServiceInstance = {
     id: string;
-    target: string;
+    event: string;
     instanceName: string;
     status: string;
+    path: string;
 };

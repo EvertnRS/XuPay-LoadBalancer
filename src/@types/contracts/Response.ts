@@ -1,14 +1,10 @@
+import type { JsonValue } from "./MessagePayload";
+import type { RequestHeaders } from "./Request";
+
 export type Response = {
-  method: string;
-  path: string;
+  statusCode: number;
+  headers: RequestHeaders;
   body: {
-    source: string;
-    type: string;
-    payload: {
-        queueMessageId?: string;
-        service?: string;
-        apiPayload: string;
-    };
-    timestamp: string;
-  }
+    [key: string]: JsonValue;
+  };
 };
