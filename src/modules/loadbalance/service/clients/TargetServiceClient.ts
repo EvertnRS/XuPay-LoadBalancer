@@ -1,8 +1,21 @@
 import { SocketClient } from "@/infra/client/SocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
+function parseRequiredPort(value: string | undefined, name: string): number {
+  const parsedPort = Number.parseInt(value ?? "", 10);
+
+  if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
+    throw new Error(`Invalid or missing port for ${name}`);
+  }
+
+  return parsedPort;
+}
+
 export class TargetServiceClient {
-  private readonly targetServicePort = parseInt(process.env.TARGET_SERVICE_PORT || " ")
+  private readonly targetServicePort = parseRequiredPort(
+    process.env.TARGET_SERVICE_PORT,
+    "TARGET_SERVICE_PORT"
+  );
 
   constructor(
     private readonly socketClient: SocketClient

@@ -11,7 +11,7 @@ export class RegistryServiceClient {
 
   public async discover(event: string): Promise<ServiceInstance[]> {
     const request = this.buildDiscoverRequest(event);
-
+    
     const rawResponse = await this.socketClient.send(
       this.registryHost,
       this.registryPort,

@@ -7,6 +7,16 @@ import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
 import { ServiceClient } from "./clients/ServiceClient";
 
+function parseRequiredPort(value: string | undefined, name: string): number {
+  const parsedPort = Number.parseInt(value ?? "", 10);
+
+  if (!Number.isInteger(parsedPort) || parsedPort < 0 || parsedPort > 65535) {
+    throw new Error(`Invalid or missing port for ${name}`);
+  }
+
+  return parsedPort;
+}
+
 export class LoadBalanceService {
   private registryServiceClient: RegistryServiceClient;
   private dnsServiceClient: DNSServiceClient;
@@ -18,15 +28,15 @@ export class LoadBalanceService {
 
     this.registryServiceClient = new RegistryServiceClient(
       socketClient,
-      process.env.REGISTRY_SERVICE_HOST || " ",
-      parseInt(process.env.REGISTRY_SERVICE_PORT || " ")
+      process.env.REGISTRY_SERVICE_HOST || "localhost",
+      parseRequiredPort(process.env.REGISTRY_SERVICE_PORT, "REGISTRY_SERVICE_PORT")
     );
 
     this.dnsServiceClient = new DNSServiceClient(
       socketClient,
-      process.env.DNS_SERVICE_HOST || " ",
-      parseInt(process.env.DNS_SERVICE_PORT || " ")
-      );
+      process.env.DNS_SERVICE_HOST || "localhost",
+      parseRequiredPort(process.env.DNS_SERVICE_PORT, "DNS_SERVICE_PORT")
+    );
 
     this.targetServiceClient = new TargetServiceClient(socketClient);
     this.serviceClient = new ServiceClient(socketClient);
@@ -53,9 +63,9 @@ export class LoadBalanceService {
 
 
     } catch (error: any) {
-    
+
       await this.serviceClient.send({
-        host: process.env.SERVICE_CLIENT_HOST || '',
+        host: process.env.SERVICE_CLIENT_HOST || "localhost",
         event,
         apiPayload,
         queueMessageId
