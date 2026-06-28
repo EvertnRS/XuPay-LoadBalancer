@@ -7,6 +7,7 @@ import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
 import { MessageClient } from "./clients/MessageClient";
 import { ResponseParser } from "../../../infra/parser/ResponseParser";
+import { JsonCodec } from "@/infra/parser/JsonCodec";
 
 function parseRequiredPort(value: string | undefined, name: string): number {
   const parsedPort = Number.parseInt(value ?? "", 10);
@@ -56,10 +57,12 @@ export class LoadBalanceService {
         selectedInstance.instanceName
       );
 
+      const jsonPayload = JsonCodec.parseObject(apiPayload);
+
       await this.targetServiceClient.send({
         host,
         path: selectedInstance.path,
-        apiPayload,
+        apiPayload: jsonPayload,
       });
 
       ResponseParser.serializeResponse(200, { message: "Mensagem processada com sucesso" });
@@ -84,10 +87,12 @@ export class LoadBalanceService {
         selectedInstance.instanceName
       );
 
+      const jsonPayload = JsonCodec.parseObject(apiPayload);
+
       const response = await this.targetServiceClient.send({
         host,
         path: selectedInstance.path,
-        apiPayload,
+        apiPayload: jsonPayload,
       });
 
       ResponseParser.serializeResponse(200, (response.servicePayload ?? {}) as Record<string, any>);

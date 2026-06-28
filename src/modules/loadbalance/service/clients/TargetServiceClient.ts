@@ -1,5 +1,6 @@
 import { ServiceResponse } from "@/@types/clients/ServiceResponse";
 import { SocketClient } from "@/infra/client/SocketClient";
+import { JsonObject } from "@/infra/parser/JsonCodec";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
 function parseRequiredPort(value: string | undefined, name: string): number {
@@ -25,7 +26,7 @@ export class TargetServiceClient {
   public async send(params: {
     host: string;
     path: string;
-    apiPayload: string;
+    apiPayload: JsonObject;
   }): Promise<ServiceResponse> {
     const request = this.buildTargetRequest(params.path, params.apiPayload);
 
@@ -52,15 +53,14 @@ export class TargetServiceClient {
     };
   }
 
-  private buildTargetRequest(path: string, apiPayload: string): string {
+  private buildTargetRequest(path: string, apiPayload: JsonObject): string {
     return ResponseParser.serialize({
       method: "POST",
       path: path,
       service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
       secret: process.env.XUPAY_SERVICE_SECRET,
       body: {
-        payload: apiPayload,
-        timestamp: new Date().toISOString(),
+        ...apiPayload
       },
     });
   }
