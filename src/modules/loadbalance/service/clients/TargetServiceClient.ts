@@ -1,3 +1,4 @@
+import { ServiceResponse } from "@/@types/clients/ServiceResponse";
 import { SocketClient } from "@/infra/client/SocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
@@ -25,14 +26,30 @@ export class TargetServiceClient {
     host: string;
     path: string;
     apiPayload: string;
-  }): Promise<void> {
+  }): Promise<ServiceResponse> {
     const request = this.buildTargetRequest(params.path, params.apiPayload);
 
-    await this.socketClient.send(
+    const rawResponse = await this.socketClient.send(
       params.host,
       this.targetServicePort,
       request
     );
+
+    const parsed = ResponseParser.deserialize(rawResponse);
+
+    if (!parsed) {
+      throw new Error("Resposta inválida do serviço alvo");
+    }
+
+    const payload = parsed.body.payload;
+
+    if (payload.kind !== "SERVICE_PAYLOAD") {
+      throw new Error("Payload inválido retornado pelo DNS Service");
+    }
+
+    return {
+      servicePayload: payload.servicePayload
+    };
   }
 
   private buildTargetRequest(path: string, apiPayload: string): string {

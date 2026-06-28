@@ -1,7 +1,7 @@
 import { PayloadBase } from "../PayloadBase";
 
-export type ClientServicePayload = PayloadBase & {
-  kind: "CLIENT_SERVICE_PAYLOAD";
+export type MessagePayload = PayloadBase & {
+  kind: "MESSAGE_PAYLOAD";
   queueMessageId: string;
   event: string;  
   apiPayload: string;

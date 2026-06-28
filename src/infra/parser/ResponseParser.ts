@@ -3,7 +3,7 @@ import {
   normalizePath,
 } from "@/@types/contracts/Request";
 import type { Request, RequestHeaders } from "@/@types/contracts/Request";
-import type { ClientServicePayload } from "@/@types/contracts/payload/ClientServicePayload";
+import type { MessagePayload } from "@/@types/contracts/payload/MessagePayload";
 import type { DNSServicePayload } from "@/@types/contracts/payload/DNSServicePayload";
 import type { RegistryServicePayload } from "@/@types/contracts/payload/RegistryServicePayload";
 import type { ServiceInstance } from "@/@types/clients/ServiceInstance";
@@ -11,12 +11,14 @@ import type { JsonValue } from "@/@types/contracts/JsonValue";
 import { JsonCodec } from "./JsonCodec";
 import type { JsonObject } from "./JsonCodec";
 import { GatewayPayload } from "@/@types/contracts/payload/GatewayPayload";
+import { ServicePayload } from "@/@types/contracts/payload/ServicePayload";
 
 type ParsedPayload =
-  | ClientServicePayload
+  | MessagePayload
   | DNSServicePayload
   | RegistryServicePayload
-  | GatewayPayload;
+  | GatewayPayload
+  | ServicePayload;
 
 type SerializableRequest = {
   method: string;
@@ -122,7 +124,7 @@ export class ResponseParser {
     const payload = this.extractPayloadObject(body);
 
     if (path === "redirect") {
-      return this.parseClientServicePayload(payload);
+      return this.parseMessagePayload(payload);
     }
 
     if (path === "instance") {
@@ -133,11 +135,11 @@ export class ResponseParser {
       return this.parseDNSServicePayload(payload);
     }
   
-    if (path === "gateway/redirect") {
+    if (path === "api/redirect") {
       return this.parseGatewayPayload(payload);
     }
 
-    return void 0 as never;
+    return this.parseServicePayload(payload);
   }
 
   private static extractPayloadObject(body: JsonObject): JsonObject {
@@ -150,6 +152,13 @@ export class ResponseParser {
     return body;
   }
 
+  private static parseServicePayload(body: JsonObject): ServicePayload {
+    return {
+      kind: "SERVICE_PAYLOAD",
+      servicePayload: body.servicePayload
+    };
+  }
+
   private static parseGatewayPayload(
     payload: JsonObject
   ): GatewayPayload {
@@ -160,11 +169,11 @@ export class ResponseParser {
     };
   }
 
-  private static parseClientServicePayload(
+  private static parseMessagePayload(
     payload: JsonObject
-  ): ClientServicePayload {
+  ): MessagePayload {
     return {
-      kind: "CLIENT_SERVICE_PAYLOAD",
+      kind: "MESSAGE_PAYLOAD",
       queueMessageId: this.requiredString(payload.queueMessageId, "queueMessageId"),
       event: this.requiredString(payload.event, "event"),
       apiPayload: this.requiredString(payload.apiPayload, "apiPayload"),

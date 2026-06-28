@@ -11,10 +11,10 @@ function parseRequiredPort(value: string | undefined, name: string): number {
   return parsedPort;
 }
 
-export class ServiceClient {
+export class MessageClient {
   private readonly targetServicePort = parseRequiredPort(
-    process.env.SERVICE_CLIENT_PORT ?? process.env.SERVICE_CLIENTPORT,
-    "SERVICE_CLIENT_PORT"
+    process.env.MESSAGE_PORT ?? process.env.SERVICE_CLIENTPORT,
+    "MESSAGE_PORT"
   );
 
   constructor(
@@ -23,11 +23,9 @@ export class ServiceClient {
 
   public async send(params: {
     host: string;
-    event: string;
-    apiPayload: string;
     queueMessageId: string;
   }): Promise<void> {
-    const request = this.buildTargetRequest(params.queueMessageId, params.event, params.apiPayload);
+    const request = this.buildTargetRequest(params.queueMessageId);
 
     await this.socketClient.send(
       params.host,
@@ -36,7 +34,7 @@ export class ServiceClient {
     );
   }
 
-  private buildTargetRequest(queueMessageId: string, event: string, apiPayload: string): string {
+  private buildTargetRequest(queueMessageId: string): string {
     return ResponseParser.serialize({
       method: "POST",
       path: "retry",
@@ -44,9 +42,7 @@ export class ServiceClient {
       secret: process.env.XUPAY_SERVICE_SECRET,
       body: {
         payload: {
-            queueMessageId,
-            event,
-            apiPayload
+            queueMessageId
         },
         timestamp: new Date().toISOString(),
       },

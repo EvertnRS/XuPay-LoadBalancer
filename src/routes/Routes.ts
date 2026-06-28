@@ -19,7 +19,7 @@ export class Routes {
             this.loadBalanceController.redirectMessage(request, socket);
         } 
         
-        else if (request.method == 'POST' && request.path == 'gateway/redirect') {
+        else if (request.method == 'POST' && request.path == 'api/redirect') {
             this.loadBalanceController.redirectRequest(request, socket);
         }
 

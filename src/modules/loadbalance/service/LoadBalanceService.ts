@@ -5,7 +5,8 @@ import { RegistryServiceClient } from "./clients/RegistryServiceClient";
 import { DNSServiceClient } from "./clients/DNSServiceClient";
 import { TargetServiceClient } from "./clients/TargetServiceClient";
 import { ErrorHandler } from "@/infra/middleware/Error";
-import { ServiceClient } from "./clients/ServiceClient";
+import { MessageClient } from "./clients/MessageClient";
+import { ResponseParser } from "../../../infra/parser/ResponseParser";
 
 function parseRequiredPort(value: string | undefined, name: string): number {
   const parsedPort = Number.parseInt(value ?? "", 10);
@@ -21,7 +22,7 @@ export class LoadBalanceService {
   private registryServiceClient: RegistryServiceClient;
   private dnsServiceClient: DNSServiceClient;
   private targetServiceClient: TargetServiceClient;
-  private serviceClient: ServiceClient;
+  private messageClient: MessageClient;
 
   constructor() {
     const socketClient = new SocketClient();
@@ -39,7 +40,7 @@ export class LoadBalanceService {
     );
 
     this.targetServiceClient = new TargetServiceClient(socketClient);
-    this.serviceClient = new ServiceClient(socketClient);
+    this.messageClient = new MessageClient(socketClient);
   }
 
   public async redirectMessage(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
@@ -61,10 +62,12 @@ export class LoadBalanceService {
         apiPayload,
       });
 
+      ResponseParser.serializeResponse(200, { message: "Mensagem processada com sucesso" });
+      socket.end();
 
     } catch (error: any) {
 
-      return await this.sendToServiceClient(queueMessageId, event, apiPayload, socket);
+      return await this.sendToServiceClient(queueMessageId, socket);
     }
   }
 
@@ -81,26 +84,31 @@ export class LoadBalanceService {
         selectedInstance.instanceName
       );
 
-      await this.targetServiceClient.send({
+      const response = await this.targetServiceClient.send({
         host,
         path: selectedInstance.path,
         apiPayload,
       });
 
+      ResponseParser.serializeResponse(200, (response.servicePayload ?? {}) as Record<string, any>);
+      socket.end();
+
     } catch (error: any) {
-      return ErrorHandler.handle("Erro ao executar balanceamento",socket);
+      return ErrorHandler.handle("Erro ao redirecionar para o serviço alvo",socket);
       
     }
   }
 
-  private async sendToServiceClient(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
+  private async sendToServiceClient(queueMessageId: string, socket: Socket): Promise<void> {
     try{
-      await this.serviceClient.send({
-        host: process.env.SERVICE_CLIENT_HOST || "localhost",
-        event,
-        apiPayload,
+      await this.messageClient.send({
+        host: process.env.MESSAGE_HOST || "localhost",
         queueMessageId
       });
+
+      ResponseParser.serializeResponse(200, { message: "Mensagem enviada para reprocessamento por falha" });
+      socket.end();
+
     } catch (error: any) {
         ErrorHandler.handle(
           "Falha ao processar a mensagem e a tentativa de reprocessamento também falhou.",
