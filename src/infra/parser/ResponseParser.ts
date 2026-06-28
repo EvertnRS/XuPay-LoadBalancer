@@ -139,7 +139,7 @@ export class ResponseParser {
       return this.parseGatewayPayload(payload);
     }
 
-    return this.parseServicePayload(payload);
+    return this.parseServicePayload(body);
   }
 
   private static extractPayloadObject(body: JsonObject): JsonObject {

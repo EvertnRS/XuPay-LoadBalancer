@@ -44,7 +44,7 @@ export class TargetServiceClient {
     const payload = parsed.body.payload;
 
     if (payload.kind !== "SERVICE_PAYLOAD") {
-      throw new Error("Payload inválido retornado pelo DNS Service");
+      throw new Error("Payload inválido retornado pelo serviço alvo");
     }
 
     return {
