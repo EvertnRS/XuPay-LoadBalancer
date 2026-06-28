@@ -64,17 +64,7 @@ export class LoadBalanceService {
 
     } catch (error: any) {
 
-      await this.serviceClient.send({
-        host: process.env.SERVICE_CLIENT_HOST || "localhost",
-        event,
-        apiPayload,
-        queueMessageId
-      });
-
-      return ErrorHandler.handle(
-        error.message ?? "Erro ao executar balanceamento",
-        socket
-      );
+      return await this.sendToServiceClient(queueMessageId, event, apiPayload, socket);
     }
   }
 
@@ -98,8 +88,25 @@ export class LoadBalanceService {
       });
 
     } catch (error: any) {
-      return ErrorHandler.handle(error.message ?? "Erro ao executar balanceamento",socket);
+      return ErrorHandler.handle("Erro ao executar balanceamento",socket);
       
     }
   }
+
+  private async sendToServiceClient(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
+    try{
+      await this.serviceClient.send({
+        host: process.env.SERVICE_CLIENT_HOST || "localhost",
+        event,
+        apiPayload,
+        queueMessageId
+      });
+    } catch (error: any) {
+        ErrorHandler.handle(
+          "Falha ao processar a mensagem e a tentativa de reprocessamento também falhou.",
+          socket
+      );
+    }
+  }
+
 }
