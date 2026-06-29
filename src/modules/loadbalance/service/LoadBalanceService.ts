@@ -1,6 +1,6 @@
 import { Socket } from "net";
 import { RoundRobinLoadBalancer } from "./RoundRobinBalancer";
-import { SocketClient } from "@/infra/client/SocketClient";
+import { TcpSocketClient } from "@/infra/client/TcpSocketClient";
 import { RegistryServiceClient } from "./clients/RegistryServiceClient";
 import { DNSServiceClient } from "./clients/DNSServiceClient";
 import { TargetServiceClient } from "./clients/TargetServiceClient";
@@ -8,6 +8,7 @@ import { ErrorHandler } from "@/infra/middleware/Error";
 import { MessageClient } from "./clients/MessageClient";
 import { ResponseParser } from "../../../infra/parser/ResponseParser";
 import { JsonCodec } from "@/infra/parser/JsonCodec";
+import { UdpSocketClient } from "@/infra/client/UdpSocketClient";
 
 function parseRequiredPort(value: string | undefined, name: string): number {
   const parsedPort = Number.parseInt(value ?? "", 10);
@@ -26,22 +27,23 @@ export class LoadBalanceService {
   private messageClient: MessageClient;
 
   constructor() {
-    const socketClient = new SocketClient();
+    const tcpSocketClient = new TcpSocketClient();
+    const udpSocketClient = new UdpSocketClient();
 
     this.registryServiceClient = new RegistryServiceClient(
-      socketClient,
+      tcpSocketClient,
       process.env.REGISTRY_SERVICE_HOST || "localhost",
       parseRequiredPort(process.env.REGISTRY_SERVICE_PORT, "REGISTRY_SERVICE_PORT")
     );
 
     this.dnsServiceClient = new DNSServiceClient(
-      socketClient,
+      udpSocketClient,
       process.env.DNS_SERVICE_HOST || "localhost",
       parseRequiredPort(process.env.DNS_SERVICE_PORT, "DNS_SERVICE_PORT")
     );
 
-    this.targetServiceClient = new TargetServiceClient(socketClient);
-    this.messageClient = new MessageClient(socketClient);
+    this.targetServiceClient = new TargetServiceClient(tcpSocketClient);
+    this.messageClient = new MessageClient(tcpSocketClient);
   }
 
   public async redirectMessage(queueMessageId: string, event: string, apiPayload: string, socket: Socket): Promise<void> {
@@ -53,7 +55,7 @@ export class LoadBalanceService {
         instances
       );
 
-      const { host } = await this.dnsServiceClient.resolve(
+      const { host, port } = await this.dnsServiceClient.resolve(
         selectedInstance.instanceName
       );
 
@@ -61,6 +63,7 @@ export class LoadBalanceService {
 
       await this.targetServiceClient.send({
         host,
+        port,
         path: selectedInstance.path,
         apiPayload: jsonPayload,
       });
@@ -83,7 +86,7 @@ export class LoadBalanceService {
         instances
       );
 
-      const { host } = await this.dnsServiceClient.resolve(
+      const { host, port } = await this.dnsServiceClient.resolve(
         selectedInstance.instanceName
       );
 
@@ -91,6 +94,7 @@ export class LoadBalanceService {
 
       const response = await this.targetServiceClient.send({
         host,
+        port,
         path: selectedInstance.path,
         apiPayload: jsonPayload,
       });

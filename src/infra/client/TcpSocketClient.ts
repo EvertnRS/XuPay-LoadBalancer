@@ -1,6 +1,6 @@
 import net from "net";
 
-export class SocketClient {
+export class TcpSocketClient {
   public send(host: string, port: number, message: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const client = new net.Socket();

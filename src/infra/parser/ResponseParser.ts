@@ -187,6 +187,7 @@ export class ResponseParser {
       kind: "DNS_SERVICE_PAYLOAD",
       instanceName: this.requiredString(payload.instanceName, "instanceName"),
       host: this.requiredString(payload.host, "host"),
+      port: this.requiredString(payload.port, "port")
     };
   }
 

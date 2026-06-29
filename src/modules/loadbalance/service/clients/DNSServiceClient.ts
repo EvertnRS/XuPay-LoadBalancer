@@ -1,10 +1,10 @@
-import { SocketClient } from "@/infra/client/SocketClient";
+import { UdpSocketClient } from "@/infra/client/UdpSocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 import { DNSResolution } from "@/@types/clients/DNSResolution";
 
 export class DNSServiceClient {
   constructor(
-    private readonly socketClient: SocketClient,
+    private readonly socketClient: UdpSocketClient,
     private readonly dnsHost: string,
     private readonly dnsPort: number
   ) {}
@@ -12,10 +12,12 @@ export class DNSServiceClient {
   public async resolve(instanceName: string): Promise<DNSResolution> {
     const request = this.buildResolveRequest(instanceName);
 
+    console.log(`Enviando requisição para criar registro DNS: ${request}`);
+
     const rawResponse = await this.socketClient.send(
-      this.dnsHost,
-      this.dnsPort,
-      request
+        this.dnsHost,
+        this.dnsPort,
+        request
     );
 
     const parsed = ResponseParser.deserialize(rawResponse);
@@ -33,6 +35,7 @@ export class DNSServiceClient {
     return {
       instanceName: payload.instanceName,
       host: payload.host,
+      port: payload.port
     };
   }
 

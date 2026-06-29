@@ -1,4 +1,4 @@
-import { SocketClient } from "@/infra/client/SocketClient";
+import { TcpSocketClient } from "@/infra/client/TcpSocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
 function parseRequiredPort(value: string | undefined, name: string): number {
@@ -13,12 +13,12 @@ function parseRequiredPort(value: string | undefined, name: string): number {
 
 export class MessageClient {
   private readonly targetServicePort = parseRequiredPort(
-    process.env.MESSAGE_PORT ?? process.env.SERVICE_CLIENTPORT,
+    process.env.MESSAGE_PORT ?? process.env.MESSAGE_PORT,
     "MESSAGE_PORT"
   );
 
   constructor(
-    private readonly socketClient: SocketClient
+    private readonly socketClient: TcpSocketClient
   ) {}
 
   public async send(params: {

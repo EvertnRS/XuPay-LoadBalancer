@@ -1,10 +1,10 @@
-import { SocketClient } from "@/infra/client/SocketClient";
+import { TcpSocketClient } from "@/infra/client/TcpSocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 import { ServiceInstance } from "@/@types/clients/ServiceInstance";
 
 export class RegistryServiceClient {
   constructor(
-    private readonly socketClient: SocketClient,
+    private readonly socketClient: TcpSocketClient,
     private readonly registryHost: string,
     private readonly registryPort: number
   ) {}

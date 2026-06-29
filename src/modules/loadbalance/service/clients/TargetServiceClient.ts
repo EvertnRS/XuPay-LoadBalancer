@@ -1,5 +1,5 @@
 import { ServiceResponse } from "@/@types/clients/ServiceResponse";
-import { SocketClient } from "@/infra/client/SocketClient";
+import { TcpSocketClient } from "@/infra/client/TcpSocketClient";
 import { JsonObject } from "@/infra/parser/JsonCodec";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 
@@ -14,17 +14,13 @@ function parseRequiredPort(value: string | undefined, name: string): number {
 }
 
 export class TargetServiceClient {
-  private readonly targetServicePort = parseRequiredPort(
-    process.env.TARGET_SERVICE_PORT,
-    "TARGET_SERVICE_PORT"
-  );
-
   constructor(
-    private readonly socketClient: SocketClient
+    private readonly socketClient: TcpSocketClient
   ) {}
 
   public async send(params: {
     host: string;
+    port: string;
     path: string;
     apiPayload: JsonObject;
   }): Promise<ServiceResponse> {
@@ -32,7 +28,7 @@ export class TargetServiceClient {
 
     const rawResponse = await this.socketClient.send(
       params.host,
-      this.targetServicePort,
+      parseRequiredPort(params.port, "TARGET_SERVICE_PORT"),
       request
     );
 
