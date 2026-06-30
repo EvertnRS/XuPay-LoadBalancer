@@ -12,6 +12,7 @@ import { JsonCodec } from "./JsonCodec";
 import type { JsonObject } from "./JsonCodec";
 import { GatewayPayload } from "@/@types/contracts/payload/GatewayPayload";
 import { ServicePayload } from "@/@types/contracts/payload/ServicePayload";
+import type { Response } from "@/@types/contracts/Response";
 
 type ParsedPayload =
   | MessagePayload
@@ -30,7 +31,7 @@ type SerializableRequest = {
 };
 
 export class ResponseParser {
-  public static deserialize(rawRequest: string): Request {
+  public static deserializeRequest(rawRequest: string): Request {
     const request = rawRequest.trim();
 
     if (!this.isHttpRequest(request)) {
@@ -38,6 +39,15 @@ export class ResponseParser {
     }
 
     return this.deserializeHttpRequest(request);
+  }
+
+  public static deserializeResponse<T = JsonObject>(rawResponse: string): Response<T> {
+    const response = rawResponse.trim();
+
+    if (!this.isHttpResponse(response)) {
+      throw new Error("Protocolo inválido. Esperado HTTP/1.1 ou HTTP/1.0");
+    }
+    return this.deserializeHttpResponse(rawResponse);
   }
 
   public static serialize(request: SerializableRequest): string {
@@ -83,6 +93,10 @@ export class ResponseParser {
     return /^[A-Z]+ \S+ HTTP\/1\.[01]/.test(request);
   }
 
+  private static isHttpResponse(response: string): boolean {
+    return /^HTTP\/1\.[01] \d+ \S+/.test(response);
+  }
+
   private static deserializeHttpRequest(rawRequest: string): Request {
     const separator = rawRequest.indexOf("\r\n\r\n");
 
@@ -106,6 +120,27 @@ export class ResponseParser {
       body,
       rawBody,
     };
+  }
+
+  private static deserializeHttpResponse<T = JsonObject>(rawResponse: string): Response<T> {
+      const separator = rawResponse.indexOf("\r\n\r\n");
+
+      if (separator === -1) {
+          throw new Error("Resposta HTTP inválida");
+      }
+
+      const headerPart = rawResponse.slice(0, separator);
+      const rawBody = rawResponse.slice(separator + 4);
+
+      const [statusLine, ...headerLines] = headerPart.split("\r\n");
+
+      const [, statusCode] = statusLine.split(" ");
+
+      return {
+          statusCode: Number(statusCode),
+          headers: this.parseHeaders(headerLines),
+          body: JsonCodec.parseObject(rawBody) as T,
+      };
   }
 
   private static parseMessageBody(

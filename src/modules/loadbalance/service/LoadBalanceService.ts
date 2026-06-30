@@ -55,20 +55,22 @@ export class LoadBalanceService {
         instances
       );
 
-      const { host, port } = await this.dnsServiceClient.resolve(
+      const { ip, port } = await this.dnsServiceClient.resolve(
         selectedInstance.instanceName
       );
-
+      
       const jsonPayload = JsonCodec.parseObject(apiPayload);
-
+      
       await this.targetServiceClient.send({
-        host,
+        host: ip,
         port,
         path: selectedInstance.path,
         apiPayload: jsonPayload,
       });
 
-      ResponseParser.serializeResponse(200, { message: "Mensagem processada com sucesso" });
+      const response = ResponseParser.serializeResponse(200, {message: "Mensagem processada com sucesso"});
+
+      socket.write(response); 
       socket.end();
 
     } catch (error: any) {
@@ -86,14 +88,14 @@ export class LoadBalanceService {
         instances
       );
 
-      const { host, port } = await this.dnsServiceClient.resolve(
+      const { ip, port } = await this.dnsServiceClient.resolve(
         selectedInstance.instanceName
       );
 
       const jsonPayload = JsonCodec.parseObject(apiPayload);
 
       const response = await this.targetServiceClient.send({
-        host,
+        host: ip,
         port,
         path: selectedInstance.path,
         apiPayload: jsonPayload,

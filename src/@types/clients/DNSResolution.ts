@@ -1,5 +1,5 @@
 export type DNSResolution = {
-  instanceName: string;
-  host: string;
+  domain: string;
+  ip: string;
   port: string;
 };

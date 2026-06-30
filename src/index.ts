@@ -12,7 +12,7 @@ const server = net.createServer((socket: net.Socket) => {
         console.log('Recebido');
         
         try{
-            const request = ResponseParser.deserialize(data.toString());
+            const request = ResponseParser.deserializeRequest(data.toString());
 
             if (!request) {
                 throw new Error("Requisição mal formatada " + data.toString());

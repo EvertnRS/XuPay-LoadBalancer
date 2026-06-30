@@ -1,6 +1,8 @@
 import { TcpSocketClient } from "@/infra/client/TcpSocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 import { ServiceInstance } from "@/@types/clients/ServiceInstance";
+import { RegistryServicePayload } from "@/@types/contracts/payload/RegistryServicePayload";
+import { ErrorResponse } from "@/@types/contracts/Response";
 
 export class RegistryServiceClient {
   constructor(
@@ -18,17 +20,19 @@ export class RegistryServiceClient {
       request
     );
 
-    const parsed = ResponseParser.deserialize(rawResponse);
+    const parsed = ResponseParser.deserializeResponse<RegistryServicePayload>(rawResponse);
 
     if (!parsed) {
       throw new Error("Resposta inválida do Service Registry");
     }
 
-    const payload = parsed.body.payload;
 
-    if (payload.kind !== "REGISTRY_SERVICE_PAYLOAD") {
-      throw new Error("Payload inválido retornado pelo Service Registry");
+    if (parsed.statusCode !== 200) {
+      const error = parsed.body as ErrorResponse;
+      throw new Error(error.error);
     }
+
+    const payload = parsed.body as RegistryServicePayload;
 
     if (!Array.isArray(payload.instances)) {
       throw new Error("Resposta do Registry deveria ser uma lista de instâncias");

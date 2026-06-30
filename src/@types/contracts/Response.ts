@@ -1,10 +1,12 @@
-import type { JsonValue } from "./JsonValue";
+import { JsonObject } from "@/infra/parser/JsonCodec";
 import type { RequestHeaders } from "./Request";
 
-export type Response = {
+export type Response<T = JsonObject> = {
   statusCode: number;
   headers: RequestHeaders;
-  body: {
-    [key: string]: JsonValue;
-  };
+  body: T | ErrorResponse;
+};
+
+export type ErrorResponse = {
+  error: string;
 };

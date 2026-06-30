@@ -1,6 +1,7 @@
 import { UdpSocketClient } from "@/infra/client/UdpSocketClient";
 import { ResponseParser } from "@/infra/parser/ResponseParser";
 import { DNSResolution } from "@/@types/clients/DNSResolution";
+import { ErrorResponse } from "@/@types/contracts/Response";
 
 export class DNSServiceClient {
   constructor(
@@ -20,22 +21,24 @@ export class DNSServiceClient {
         request
     );
 
-    const parsed = ResponseParser.deserialize(rawResponse);
+
+    const parsed = ResponseParser.deserializeResponse<DNSResolution>(rawResponse);
 
     if (!parsed) {
       throw new Error("Resposta inválida do DNS Service");
     }
 
-    const payload = parsed.body.payload;
-
-    if (payload.kind !== "DNS_SERVICE_PAYLOAD") {
-      throw new Error("Payload inválido retornado pelo DNS Service");
+    if (parsed.statusCode !== 200) {
+      const error = parsed.body as ErrorResponse;
+      throw new Error(error.error);
     }
 
+    const body = parsed.body as DNSResolution;
+
     return {
-      instanceName: payload.instanceName,
-      host: payload.host,
-      port: payload.port
+      domain: body.domain,
+      ip: body.ip,
+      port: body.port
     };
   }
 
@@ -46,7 +49,7 @@ export class DNSServiceClient {
       service: process.env.XUPAY_SERVICE_NAME || "xupay-load-balancer",
       secret: process.env.XUPAY_SERVICE_SECRET,
       body: {
-        instanceName
+        domain: instanceName
       },
     });
   }
